@@ -4,7 +4,6 @@ import numpy as np
 from cs231n.classifiers.linear_svm import *
 from cs231n.classifiers.softmax import *
 
-
 class LinearClassifier(object):
 
   def __init__(self):
@@ -40,9 +39,7 @@ class LinearClassifier(object):
     for it in range(num_iters):
       X_batch = None
       y_batch = None
-      randomIndex = np.random.choice(len(X),batch_size,replace=True)
-      X_batch = X[randomIndex]
-      y_batch = y[randomIndex]
+
       #########################################################################
       # TODO:                                                                 #
       # Sample batch_size elements from the training data and their           #
@@ -55,6 +52,9 @@ class LinearClassifier(object):
       # replacement is faster than sampling without replacement.              #
       #########################################################################
       #pass
+      batch_idx = np.random.choice(num_train, batch_size, replace = True)
+      X_batch = X[batch_idx]
+      y_batch = y[batch_idx]
       #########################################################################
       #                       END OF YOUR CODE                                #
       #########################################################################
@@ -68,7 +68,8 @@ class LinearClassifier(object):
       # TODO:                                                                 #
       # Update the weights using the gradient and the learning rate.          #
       #########################################################################
-      self.W+=(-grad*learning_rate)
+      #pass
+      self.W += - learning_rate * grad
       #########################################################################
       #                       END OF YOUR CODE                                #
       #########################################################################
@@ -93,13 +94,13 @@ class LinearClassifier(object):
       class.
     """
     y_pred = np.zeros(X.shape[0])
-    scores= X.dot(self.W)
-    y_pred = np.argmax(scores,axis=1)
     ###########################################################################
     # TODO:                                                                   #
     # Implement this method. Store the predicted labels in y_pred.            #
     ###########################################################################
     #pass
+    scores = X.dot(self.W)
+    y_pred = np.argmax(scores, axis = 1)
     ###########################################################################
     #                           END OF YOUR CODE                              #
     ###########################################################################

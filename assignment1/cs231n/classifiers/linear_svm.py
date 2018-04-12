@@ -28,24 +28,21 @@ def svm_loss_naive(W, X, y, reg):
   for i in range(num_train):
     scores = X[i].dot(W)
     correct_class_score = scores[y[i]]
-
     for j in range(num_classes):
       if j == y[i]:
         continue
       margin = scores[j] - correct_class_score + 1 # note delta = 1
       if margin > 0:
         loss += margin
-        #计算j不等于yi的行的梯度
-        dW[:, j] += X[i]
-        #j=yi时的梯度
-        dW[:, y[i]]+=(-X[i])
+        dW[:,j] += X[i].T
+        dW[:,y[i]] += -X[i].T
 
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
   loss /= num_train
   dW /= num_train
   # Add regularization to the loss.
-  loss += reg * np.sum(W * W)
+  loss += 0.5 * reg * np.sum(W * W)
   dW += reg * W
   #############################################################################
   # TODO:                                                                     #
@@ -55,6 +52,7 @@ def svm_loss_naive(W, X, y, reg):
   # loss is being computed. As a result you may need to modify some of the    #
   # code above to compute the gradient.                                       #
   #############################################################################
+
 
   return loss, dW
 
@@ -67,44 +65,23 @@ def svm_loss_vectorized(W, X, y, reg):
   """
   loss = 0.0
   dW = np.zeros(W.shape) # initialize the gradient as zero
-  num_train=X.shape[0]
-  num_classes = W.shape[1]
+
   #############################################################################
   # TODO:                                                                     #
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
   #pass
+  num_train = X.shape[0]
+  num_classes = W.shape[1]
+  scores = X.dot(W)
+  correct_class_scores = scores[range(num_train), list(y)].reshape(-1,1)  # (N,1)
+  margins = np.maximum(0, scores - correct_class_scores + 1)
+  margins[range(num_train), list(y)] = 0
+  loss = np.sum(margins) / num_train + 0.5 * reg * np.sum(W * W)
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
-
-
-  scores = X.dot(W)
-  #这里得到一个500*10的矩阵,表示500个image的ground truth
-  correct_class_score = scores[np.arange(num_train),y]
-  #重复10次,得到500*10的矩阵,才可以和scores相加相减
-  correct_class_score = np.reshape(np.repeat(correct_class_score,num_classes),(num_train,num_classes))
-  margin = scores-correct_class_score+1.0
-  margin[np.arange(num_train),y]=0
-
-  loss = (np.sum(margin[margin > 0]))/num_train
-  loss+=reg*np.sum(W*W)
-
-  #gradient
-  margin[margin>0]=1
-  margin[margin<=0]=0
-
-  row_sum = np.sum(margin, axis=1)                  # 1 by N
-  margin[np.arange(num_train), y] = -row_sum
-  dW += np.dot(X.T, margin)     # D by C
-  # for xi in range(num_train):
-  #   dW+=np.reshape(X[xi],(dW.shape[0],1))*\
-  #       np.reshape(margin[xi],(1,dW.shape[1]))
-
-  dW/=num_train
-  dW += reg * W
-
 
 
   #############################################################################
@@ -117,6 +94,13 @@ def svm_loss_vectorized(W, X, y, reg):
   # loss.                                                                     #
   #############################################################################
   #pass
+  coeff_mat = np.zeros((num_train, num_classes))
+  coeff_mat[margins > 0] = 1
+  coeff_mat[range(num_train), list(y)] = 0
+  coeff_mat[range(num_train), list(y)] = -np.sum(coeff_mat, axis=1)
+
+  dW = (X.T).dot(coeff_mat)
+  dW = dW/num_train + reg*W
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################

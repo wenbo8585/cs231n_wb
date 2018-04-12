@@ -22,32 +22,7 @@ def softmax_loss_naive(W, X, y, reg):
   # Initialize the loss and gradient to zero.
   loss = 0.0
   dW = np.zeros_like(W)
-  num_classes = W.shape[1]
-  num_train = X.shape[0]
 
-  scores=X.dot(W)
-  maxLogC = np.max(scores,axis=1)
-  maxLogC=np.reshape(np.repeat(maxLogC,num_classes),scores.shape )
-  expScores=np.exp(scores+maxLogC)
-
-  #loss and gradient implement
-  for i in range(num_train):
-    # substract maxnium to make the exp standard
-
-    esum=sum(expScores[i])
-    eyi = expScores[i,y[i]]
-    li = -np.log(eyi / esum)
-    loss+=li
-
-    for j in range(num_classes):
-      dW[:,j]+=(expScores[i,j]/esum)*X[i]
-
-    dW[:,y[i]] -= X[i]
-  loss /= num_train
-  loss += reg * np.sum(W*W)
-
-  dW /= num_train
-  dW += reg * W
   #############################################################################
   # TODO: Compute the softmax loss and its gradient using explicit loops.     #
   # Store the loss in loss and the gradient in dW. If you are not careful     #
@@ -55,6 +30,23 @@ def softmax_loss_naive(W, X, y, reg):
   # regularization!                                                           #
   #############################################################################
   #pass
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+  for i in range(num_train):
+        scores = X[i].dot(W)
+        shift_scores = scores - max(scores)
+        loss_i = - shift_scores[y[i]] + np.log(sum(np.exp(shift_scores)))
+        loss += loss_i
+        for j in range(num_classes):
+            softmax_output = np.exp(shift_scores[j])/sum(np.exp(shift_scores))
+            if j == y[i]:
+                dW[:,j] += (-1 + softmax_output) * X[i]
+            else:
+                dW[:,j] += softmax_output * X[i]
+                
+  loss /= num_train
+  loss += 0.5*reg*np.sum(W * W)
+  dW = dW/num_train + reg*W 
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
@@ -71,29 +63,6 @@ def softmax_loss_vectorized(W, X, y, reg):
   # Initialize the loss and gradient to zero.
   loss = 0.0
   dW = np.zeros_like(W)
-  num_classes = W.shape[1]
-  num_train = X.shape[0]
-
-  scores=X.dot(W)
-  maxLogC = np.max(scores,axis=1)
-  maxLogC=np.reshape(np.repeat(maxLogC,num_classes),scores.shape )
-  expScores=np.exp(scores+maxLogC)
-  exp_correct_class_score = expScores[np.arange(num_train), y]
-
-  #loss
-  loss=-np.log(exp_correct_class_score/np.sum(expScores,axis=1))
-  loss=sum(loss)/num_train
-  loss+=reg*np.sum(W*W)
-
-  #gradient
-  expScoresSumRow=np.reshape(np.repeat(np.sum(expScores,axis=1),num_classes),expScores.shape )
-  graidentMatrix=expScores/ expScoresSumRow
-  #对于yi要-1
-  graidentMatrix[np.arange(num_train),y]-=1
-  dW = X.T.dot(graidentMatrix)
-  # dW[np.arange(num_classes),y] -= X[y,]
-  dW/=num_train
-  dW+=reg*W
 
   #############################################################################
   # TODO: Compute the softmax loss and its gradient using no explicit loops.  #
@@ -102,6 +71,19 @@ def softmax_loss_vectorized(W, X, y, reg):
   # regularization!                                                           #
   #############################################################################
   #pass
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+  scores = X.dot(W)
+  shift_scores = scores - np.max(scores, axis = 1).reshape(-1,1)
+  softmax_output = np.exp(shift_scores)/np.sum(np.exp(shift_scores), axis = 1).reshape(-1,1)
+  loss = -np.sum(np.log(softmax_output[range(num_train), list(y)]))
+  loss /= num_train
+  loss += 0.5 * reg * np.sum(W * W)
+  
+  dS = softmax_output.copy()
+  dS[range(num_train), list(y)] += -1
+  dW = (X.T).dot(dS)
+  dW = dW/num_train + reg * W
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
